@@ -1576,6 +1576,21 @@ dialog::backdrop {
 }
 
 /* Conversion controls should be easy to read and use, including on touch screens. */
+.pdf-options {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.pdf-mode-label {
+  font-size: 11px;
+  color: #64715c;
+}
+.pdf-mode-select {
+  width: 100%;
+  max-width: none;
+}
 .convert-button {
   min-height: 48px;
   font-size: 14px;

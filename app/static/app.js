@@ -160,6 +160,7 @@ function addFiles(files) {
       format,
       target: defaultTarget(format),
       status: "pending",
+      pdfMode: "editable",
     });
     added++;
   }
@@ -252,9 +253,45 @@ function renderQueue() {
         : "Processed temporarily on the server.";
     controls.append(label, select, badge);
     row.append(controls);
-    if (route.note) {
+    let conversionNote = route.note;
+    if (
+      item.source === "pdf" &&
+      item.target === "docx" &&
+      configuration.pdf_word_modes?.length
+    ) {
+      const options = node("div", "pdf-options");
+      const modeLabel = node("label", "pdf-mode-label", "Word conversion");
+      modeLabel.htmlFor = "pdf-mode-" + item.id;
+      const modeSelect = node("select", "target-select pdf-mode-select");
+      modeSelect.id = modeLabel.htmlFor;
+      modeSelect.disabled = busy;
+      modeSelect.setAttribute(
+        "aria-label",
+        `Word conversion mode for ${item.file.name}`,
+      );
+      for (const mode of configuration.pdf_word_modes) {
+        const option = node("option", "", mode.label);
+        option.value = mode.value;
+        option.selected = item.pdfMode === mode.value;
+        modeSelect.append(option);
+      }
+      modeSelect.addEventListener("change", () => {
+        release(item);
+        item.pdfMode = modeSelect.value;
+        item.status = "pending";
+        item.error = undefined;
+        renderQueue();
+        document.getElementById(modeSelect.id)?.focus();
+      });
+      options.append(modeLabel, modeSelect);
+      row.append(options);
+      conversionNote =
+        configuration.pdf_word_modes.find((mode) => mode.value === item.pdfMode)
+          ?.note ?? route.note;
+    }
+    if (conversionNote) {
       const note = node("p", "file-note");
-      note.append(icon("info"), document.createTextNode(route.note));
+      note.append(icon("info"), document.createTextNode(conversionNote));
       row.append(note);
     }
     if (item.status !== "pending") {
@@ -331,6 +368,8 @@ async function convertFile(item) {
       const data = new FormData();
       data.append("file", item.file);
       data.append("target", item.target);
+      if (item.source === "pdf" && item.target === "docx")
+        data.append("pdf_mode", item.pdfMode);
       let response;
       try {
         response = await fetch(new URL("api/convert", appBase), {
@@ -381,15 +420,26 @@ async function runBatch(
     item.status = "queued";
   });
   renderQueue();
-  let cursor = 0;
-  async function worker() {
-    while (cursor < selected.length) {
-      const item = selected[cursor++];
-      await convertFile(item);
+  async function pool(items, capacity) {
+    let cursor = 0;
+    async function worker() {
+      while (cursor < items.length) await convertFile(items[cursor++]);
     }
+    await Promise.all(
+      Array.from({ length: Math.min(capacity, items.length) }, worker),
+    );
   }
   try {
-    await Promise.all([worker(), worker()]);
+    await Promise.all([
+      pool(
+        selected.filter((item) => targetInfo(item).engine === "browser"),
+        2,
+      ),
+      pool(
+        selected.filter((item) => targetInfo(item).engine === "server"),
+        Math.min(2, configuration.server_conversion_workers ?? 2),
+      ),
+    ]);
   } finally {
     busy = false;
     renderQueue();

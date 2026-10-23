@@ -33,6 +33,18 @@ DOCUMENTS = ("docx", "pdf", "txt", "md", "html", "odt", "rtf", "epub")
 TABLES = ("xlsx", "csv", "tsv", "json", "ods")
 IMAGES = ("png", "jpg", "webp", "gif", "bmp", "tiff")
 SLIDES = ("pptx",)
+PDF_WORD_MODES = [
+    {
+        "value": "editable",
+        "label": "Editable layout",
+        "note": "Reconstructs editable text, tables, and images. Complex layouts and fonts can still shift.",
+    },
+    {
+        "value": "appearance",
+        "label": "Exact appearance",
+        "note": "Keeps each page as an image inside Word. Original appearance is retained, but text is not editable. Also works for scanned pages.",
+    },
+]
 
 
 def normalize(extension: str) -> str:
@@ -70,6 +82,8 @@ def browser_route(source: str, target: str) -> bool:
 
 def conversion_note(source: str, target: str) -> str | None:
     if source == "pdf":
+        if target == "docx":
+            return PDF_WORD_MODES[0]["note"]
         return "Extracts text. Original layout, images, and scanned pages are not preserved."
     if source in {"pptx", "ppt", "odp"}:
         if target in {"pdf", "odp", "pptx"} and office_available():
@@ -123,4 +137,5 @@ def registry() -> dict:
         "max_file_size": 25 * 1024 * 1024,
         "max_batch_size": 10,
         "office_available": office_available(),
+        "pdf_word_modes": PDF_WORD_MODES,
     }

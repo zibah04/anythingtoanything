@@ -105,11 +105,15 @@ def health():
 
 @app.get("/api/formats")
 def formats():
-    return registry()
+    return {**registry(), "server_conversion_workers": conversion_workers}
 
 
 @app.post("/api/convert")
-async def convert(file: Annotated[UploadFile, File()], target: Annotated[str, Form()]):
+async def convert(
+    file: Annotated[UploadFile, File()],
+    target: Annotated[str, Form()],
+    pdf_mode: Annotated[str, Form()] = "editable",
+):
     try:
         async with slots:
             chunks, size = [], 0
@@ -125,7 +129,7 @@ async def convert(file: Annotated[UploadFile, File()], target: Annotated[str, Fo
             target_ext = normalize(target)
             try:
                 result = await run_in_threadpool(
-                    convert_bytes, b"".join(chunks), source_ext, target_ext
+                    convert_bytes, b"".join(chunks), source_ext, target_ext, pdf_mode
                 )
             except ConversionError as exc:
                 raise HTTPException(422, str(exc)) from exc

@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import warnings
 import zipfile
@@ -496,7 +497,50 @@ def image_convert(source: Path, target: Path, target_ext: str) -> None:
             raise ConversionError("This image exceeds the 25 megapixel processing limit.") from exc
 
 
-def convert_bytes(data: bytes, source_ext: str, target_ext: str) -> bytes:
+def pdf_word_convert(source: Path, target: Path, mode: str) -> None:
+    if mode not in {"editable", "appearance"}:
+        raise ConversionError(
+            "Choose Editable layout or Exact appearance for PDF-to-Word conversion."
+        )
+    status = source.with_name("pdf-word-status.json")
+    try:
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "app.pdf_word",
+                str(source),
+                str(target),
+                "--mode",
+                mode,
+                "--status",
+                str(status),
+            ],
+            check=False,
+            capture_output=True,
+            timeout=90,
+            cwd=Path(__file__).resolve().parents[1],
+            env={
+                **os.environ,
+                "OMP_NUM_THREADS": "1",
+                "OPENBLAS_NUM_THREADS": "1",
+                "MKL_NUM_THREADS": "1",
+            },
+        )
+    except subprocess.TimeoutExpired as error:
+        raise ConversionError(
+            "PDF-to-Word timed out. Split the PDF into fewer pages and try again."
+        ) from error
+    outcome = json.loads(status.read_text(encoding="utf-8")) if status.is_file() else {}
+    if result.returncode or not outcome.get("ok"):
+        raise ConversionError(
+            outcome.get("message", "The PDF conversion could not finish. Try a smaller PDF.")
+        )
+
+
+def convert_bytes(
+    data: bytes, source_ext: str, target_ext: str, pdf_mode: str = "editable"
+) -> bytes:
     source_ext, target_ext = normalize(source_ext), normalize(target_ext)
     if target_ext not in target_map().get(source_ext, []):
         raise ConversionError(
@@ -548,6 +592,8 @@ def convert_bytes(data: bytes, source_ext: str, target_ext: str) -> bytes:
                     office_convert(source, target, "pdf")
                 else:
                     text_pdf(extract_text(source, source_ext), target)
+            elif source_ext == "pdf" and target_ext == "docx":
+                pdf_word_convert(source, target, pdf_mode)
             elif source_ext in {"pdf", "pptx"}:
                 text = extract_text(source, source_ext)
                 plain = root / "extracted.txt"
