@@ -1,0 +1,8 @@
+{
+  "name": "anythingtoanything-browser-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/local.test.mjs"
+  }
+}

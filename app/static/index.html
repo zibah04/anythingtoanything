@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#f5f6f2" />
+    <meta
+      name="description"
+      content="Give your files a fresh format. Convert documents, spreadsheets, presentations, and images with simple, private browser and server conversions."
+    />
+    <title>Anything to Anything — A fresh format.</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <svg
+      class="icon-library"
+      width="0"
+      height="0"
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <symbol id="i-arrow" viewBox="0 0 24 24">
+        <path d="M4 12h15m-6-6 6 6-6 6" />
+      </symbol>
+      <symbol id="i-swap" viewBox="0 0 24 24">
+        <path d="M4 8h15m-4-4 4 4-4 4M20 16H5m4-4-4 4 4 4" />
+      </symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24">
+        <path
+          d="M12 16V3m-5 5 5-5 5 5M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"
+        />
+      </symbol>
+      <symbol id="i-file" viewBox="0 0 24 24">
+        <path
+          d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Zm0 0v6h6M8 13h8m-8 4h5"
+        />
+      </symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24">
+        <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Zm-4 9 3 3 5-6" />
+      </symbol>
+      <symbol id="i-bolt" viewBox="0 0 24 24">
+        <path d="m13 2-9 12h7l-1 8 10-12h-7Z" />
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24">
+        <path d="m5 12 4 4L19 6" />
+      </symbol>
+      <symbol id="i-close" viewBox="0 0 24 24">
+        <path d="m6 6 12 12M6 18 18 6" />
+      </symbol>
+      <symbol id="i-download" viewBox="0 0 24 24">
+        <path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" />
+      </symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+      </symbol>
+      <symbol id="i-info" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 11v6m0-10v1" />
+      </symbol>
+      <symbol id="i-github" viewBox="0 0 24 24">
+        <path
+          d="M9 19c-5 1.5-5-2.5-7-3m14 6v-4a3.5 3.5 0 0 0-1-2.8c3.3-.4 6.8-1.6 6.8-7.4a5.8 5.8 0 0 0-1.6-4 5.4 5.4 0 0 0-.1-3.8S18.9-.4 16 1.5a14.6 14.6 0 0 0-8 0C5.1-.4 3.9 0 3.9 0a5.4 5.4 0 0 0-.1 3.8 5.8 5.8 0 0 0-1.6 4c0 5.8 3.5 7 6.8 7.4A3.5 3.5 0 0 0 8 18v4"
+          transform="translate(1 1) scale(.9)"
+        />
+      </symbol>
+    </svg>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Anything to Anything home"
+        ><span class="brand-mark"
+          ><svg width="20" height="20" class="icon">
+            <use href="#i-swap" /></svg></span
+        ><span
+          >anything<span class="brand-to">to</span>anything<span
+            class="brand-dot"
+            >.</span
+          ></span
+        ></a
+      >
+      <nav aria-label="Main navigation">
+        <a class="nav-active" href="#converter">Converter</a
+        ><button class="nav-button" id="formats-nav">Supported formats</button
+        ><a href="#how-it-works">How it works</a>
+      </nav>
+      <a
+        class="source-link"
+        href="https://github.com/zibah04/anythingtoanything"
+        target="_blank"
+        rel="noopener noreferrer"
+        ><svg width="20" height="20" class="icon"><use href="#i-github" /></svg
+        ><span>View source</span
+        ><svg
+          width="20"
+          height="20"
+          class="icon outward-arrow"
+          aria-hidden="true"
+        >
+          <use href="#i-arrow" /></svg
+      ></a>
+    </header>
+    <main>
+      <section class="workspace" aria-labelledby="hero-heading">
+        <div class="intro">
+          <div class="eyebrow">
+            <span class="status-dot"></span> A LITTLE CHANGE. A LOT OF
+            POSSIBILITY.
+          </div>
+          <h1 id="hero-heading">Every file,<br />a <em>fresh format.</em></h1>
+          <p class="intro-copy">
+            From the file you have to the file you need.<br
+              class="desktop-break"
+            />
+            Convert documents, spreadsheets, and images<br
+              class="desktop-break"
+            />
+            in a few simple clicks.
+          </p>
+          <div class="intro-tags">
+            <span
+              ><svg width="20" height="20" class="icon">
+                <use href="#i-check" /></svg
+              >No sign-up</span
+            ><span
+              ><svg width="20" height="20" class="icon">
+                <use href="#i-check" /></svg
+              >No watermarks</span
+            ><span
+              ><svg width="20" height="20" class="icon">
+                <use href="#i-check" /></svg
+              >No installation</span
+            >
+          </div>
+          <div class="file-illustration" aria-hidden="true">
+            <div class="illustration-line"></div>
+            <div class="paper paper-word">
+              <div class="paper-fold"></div>
+              <span class="paper-type">DOCX</span
+              ><span class="paper-line"></span
+              ><span class="paper-line short"></span
+              ><span class="paper-line"></span
+              ><span class="paper-label">The original</span>
+            </div>
+            <div class="illustration-arrow">
+              <svg width="20" height="20" class="icon">
+                <use href="#i-swap" />
+              </svg>
+            </div>
+            <div class="paper paper-pdf">
+              <div class="paper-fold"></div>
+              <span class="paper-type">PDF</span><span class="paper-line"></span
+              ><span class="paper-line short"></span
+              ><span class="paper-line"></span
+              ><span class="paper-label">A fresh start</span>
+            </div>
+            <span class="little-spark spark-one">✳</span
+            ><span class="little-spark spark-two">+</span>
+          </div>
+          <div class="privacy-note">
+            <span class="privacy-symbol"
+              ><svg width="20" height="20" class="icon">
+                <use href="#i-shield" /></svg
+            ></span>
+            <div>
+              <strong>Your files are yours.</strong>
+              <p>
+                Local when possible. Temporary when uploaded.<br />No accounts,
+                tracking, or stored documents.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <section
+          class="converter-card"
+          id="converter"
+          aria-labelledby="converter-heading"
+        >
+          <div class="card-heading">
+            <div>
+              <div class="small-label">THE CONVERTER</div>
+              <h2 id="converter-heading">Let’s make the switch.</h2>
+            </div>
+            <span class="step-tag">01 — 03</span>
+          </div>
+          <div id="connection-error" class="alert error" role="alert" hidden>
+            <span id="connection-message"></span
+            ><button id="retry-connection" class="text-button">
+              Try again
+            </button>
+          </div>
+          <input
+            id="file-input"
+            class="sr-only"
+            type="file"
+            multiple
+            aria-label="Choose files to convert"
+          />
+          <button id="dropzone" class="dropzone" type="button" disabled>
+            <span class="upload-symbol"
+              ><svg width="20" height="20" class="icon">
+                <use href="#i-upload" /></svg
+              ><span class="upload-plus">+</span></span
+            >
+            <strong>Drop your files here</strong
+            ><span
+              >or
+              <span class="browse-link"
+                >browse files
+                <svg
+                  width="20"
+                  height="20"
+                  class="icon outward-arrow"
+                  aria-hidden="true"
+                >
+                  <use href="#i-arrow" /></svg></span
+            ></span>
+            <span class="upload-limits">Up to 10 files · 25 MB each</span>
+          </button>
+          <div
+            id="file-list"
+            class="file-list"
+            aria-label="Conversion queue"
+          ></div>
+          <div id="queue-actions" class="queue-actions" hidden>
+            <span id="queue-count"></span
+            ><button class="text-button muted" id="clear-files">
+              Clear all
+            </button>
+          </div>
+          <div id="empty-format" class="empty-format">
+            <span class="format-step">02</span>
+            <div>
+              <strong>Choose your new format</strong>
+              <p>We’ll show compatible options after you add a file.</p>
+            </div>
+            <svg width="20" height="20" class="icon">
+              <use href="#i-swap" />
+            </svg>
+          </div>
+          <div class="card-bottom">
+            <button id="convert-button" class="convert-button" disabled>
+              <span id="convert-label">Convert files</span
+              ><svg width="20" height="20" class="icon">
+                <use href="#i-arrow" />
+              </svg>
+            </button>
+            <p class="conversion-caption" id="conversion-caption">
+              A fresh format is just a file away.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span
+              ><svg width="20" height="20" class="icon">
+                <use href="#i-shield" /></svg
+              >Secure by design</span
+            ><button id="formats-card" class="text-button">
+              Explore formats
+              <svg
+                width="20"
+                height="20"
+                class="icon outward-arrow"
+                aria-hidden="true"
+              >
+                <use href="#i-arrow" />
+              </svg>
+            </button>
+          </div>
+        </section>
+      </section>
+
+      <section class="format-ribbon" aria-label="Popular supported formats">
+        <span>ALL YOUR EVERYDAY FORMATS</span>
+        <div>
+          <span class="format-tag tag-red">PDF</span
+          ><span class="format-tag tag-blue">DOCX</span
+          ><span class="format-tag tag-green">XLSX</span
+          ><span class="format-tag tag-orange">PPTX</span
+          ><span class="format-tag tag-purple">PNG</span
+          ><span class="format-tag tag-gray">MD</span
+          ><button id="formats-more" class="formats-more">
+            and more
+            <svg
+              width="20"
+              height="20"
+              class="icon outward-arrow"
+              aria-hidden="true"
+            >
+              <use href="#i-arrow" />
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <section
+        class="how-section"
+        id="how-it-works"
+        aria-labelledby="how-heading"
+      >
+        <div class="section-heading">
+          <div>
+            <div class="small-label">LESS FRICTION, MORE FLOW</div>
+            <h2 id="how-heading">Three steps. Then you’re on your way.</h2>
+          </div>
+          <span class="handwritten"
+            >It’s that simple. <span aria-hidden="true">↙</span></span
+          >
+        </div>
+        <div class="steps-grid">
+          <article>
+            <span class="step-number">01</span
+            ><svg width="20" height="20" class="icon">
+              <use href="#i-upload" />
+            </svg>
+            <h3>Bring your file.</h3>
+            <p>
+              Drop in a document, a spreadsheet, a presentation, or an image.
+              One file or a whole handful.
+            </p>
+          </article>
+          <article>
+            <span class="step-number">02</span
+            ><svg width="20" height="20" class="icon">
+              <use href="#i-swap" />
+            </svg>
+            <h3>Find its next format.</h3>
+            <p>
+              Choose from compatible formats. We’ll tell you where formatting or
+              content may change.
+            </p>
+          </article>
+          <article>
+            <span class="step-number">03</span
+            ><svg width="20" height="20" class="icon">
+              <use href="#i-download" />
+            </svg>
+            <h3>Take it from here.</h3>
+            <p>
+              Convert, download, and get back to what matters. Your uploaded
+              files aren’t kept on the server.
+            </p>
+          </article>
+        </div>
+      </section>
+      <section class="honesty-note">
+        <svg width="20" height="20" class="icon"><use href="#i-info" /></svg>
+        <p>
+          <strong>A small note on “anything.”</strong> Some formats simply
+          aren’t compatible. Scanned PDFs need OCR, and complex layouts can
+          change. We show the available options and tradeoffs before you
+          convert.
+        </p>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <a class="brand footer-brand" href="./"
+        >anything<span class="brand-to">to</span>anything.</a
+      ><span>New format. Same good stuff.</span
+      ><button id="privacy-button" class="text-button muted">
+        Privacy & file handling
+      </button>
+    </footer>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <div id="announcements" class="sr-only" aria-live="polite"></div>
+
+    <dialog id="formats-dialog" aria-labelledby="formats-title">
+      <div class="dialog-heading">
+        <div>
+          <div class="small-label">FIND A GOOD FIT</div>
+          <h2 id="formats-title">A format for what’s next.</h2>
+        </div>
+        <button
+          class="icon-button close-dialog"
+          aria-label="Close supported formats"
+        >
+          <svg width="20" height="20" class="icon"><use href="#i-close" /></svg>
+        </button>
+      </div>
+      <p class="dialog-description">
+        Choose a source format to see its compatible destinations. “On device”
+        means your file stays in this browser.
+      </p>
+      <label class="search-label" for="format-search">Find a format</label
+      ><input
+        id="format-search"
+        type="search"
+        class="format-search"
+        placeholder="Search PDF, Word, images…"
+      />
+      <div id="format-catalog" class="format-catalog"></div>
+      <p class="dialog-footnote">
+        Legacy DOC, XLS, and PPT formats are available when the server has
+        LibreOffice installed. Scanned PDF OCR is not supported yet.
+      </p>
+    </dialog>
+    <dialog id="privacy-dialog" aria-labelledby="privacy-title">
+      <div class="dialog-heading">
+        <div>
+          <div class="small-label">JUST BETWEEN YOU AND YOUR FILES</div>
+          <h2 id="privacy-title">A little privacy, by design.</h2>
+        </div>
+        <button
+          class="icon-button close-dialog"
+          aria-label="Close privacy information"
+        >
+          <svg width="20" height="20" class="icon"><use href="#i-close" /></svg>
+        </button>
+      </div>
+      <div class="privacy-details">
+        <h3>On-device conversions</h3>
+        <p>
+          Common image, text, and CSV/JSON conversions happen in your browser.
+          Those files are never uploaded. Look for the “On device” label.
+        </p>
+        <h3>Server conversions</h3>
+        <p>
+          Complex formats are sent to this app’s server. Each conversion uses a
+          temporary folder that is removed when processing finishes or fails.
+          Converted files are returned directly, with no stored download links.
+        </p>
+        <h3>What stays in the browser</h3>
+        <p>
+          Your original files and download results stay in this tab’s memory
+          until you remove them, clear the queue, or close the page. We use no
+          accounts, analytics, or cookies.
+        </p>
+        <h3>A practical limit</h3>
+        <p>
+          Files are limited to 25 MB. Password-protected files and scanned PDF
+          OCR are not supported. For sensitive documents, use a deployment you
+          trust.
+        </p>
+      </div>
+    </dialog>
+  </body>
+</html>

@@ -1,0 +1,20 @@
+# A free initial deployment. No paid plan or persistent disk is requested.
+# Free services may sleep when idle; initial requests can take longer to start.
+services:
+  - type: web
+    name: anythingtoanything
+    runtime: docker
+    plan: free
+    region: frankfurt
+    repo: https://github.com/zibah04/anythingtoanything
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: CONVERSION_WORKERS
+        value: "1"
+      - key: HTTP_CONCURRENCY
+        value: "8"
