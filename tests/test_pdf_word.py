@@ -57,7 +57,7 @@ def layout_pdf():
 
 @pytest.fixture(scope="module")
 def editable_word(layout_pdf):
-    return convert_bytes(layout_pdf, "pdf", "docx")
+    return convert_bytes(layout_pdf, "pdf", "docx", "editable")
 
 
 @pytest.fixture(scope="module")
@@ -149,7 +149,10 @@ def test_scanned_pdf_appearance_succeeds_without_claiming_editable_text():
     result = convert_bytes(scan.getvalue(), "pdf", "docx", "appearance")
     assert len(Document(io.BytesIO(result))._element.xpath(".//wp:anchor")) == 1
     with pytest.raises(ConversionError, match="OCR"):
-        convert_bytes(scan.getvalue(), "pdf", "docx")
+        convert_bytes(scan.getvalue(), "pdf", "docx", "editable")
+    precise = Document(io.BytesIO(convert_bytes(scan.getvalue(), "pdf", "docx")))
+    assert len(precise._element.xpath(".//wp:anchor")) == 1
+    assert not precise._element.xpath(".//w:txbxContent")
 
 
 def test_pdf_word_rejects_passwords_and_excessive_pages(layout_pdf):
@@ -177,7 +180,7 @@ def test_pdf_word_api_modes_and_errors(layout_pdf):
             if item["extension"] == "pdf"
         )
         assert (
-            "Reconstructs"
+            "editable text boxes"
             in next(item for item in pdf["targets"] if item["extension"] == "docx")["note"]
         )
         response = client.post(
@@ -194,7 +197,7 @@ def test_pdf_word_api_modes_and_errors(layout_pdf):
             data={"target": "docx", "pdf_mode": "unknown"},
         )
         assert response.status_code == 422
-        assert "Choose Editable layout" in response.json()["detail"]
+        assert "Choose Precise layout" in response.json()["detail"]
     assert "Extracts text" in conversion_note("pdf", "txt")
 
 

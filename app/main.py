@@ -112,7 +112,7 @@ def formats():
 async def convert(
     file: Annotated[UploadFile, File()],
     target: Annotated[str, Form()],
-    pdf_mode: Annotated[str, Form()] = "editable",
+    pdf_mode: Annotated[str, Form()] = "precise",
 ):
     try:
         async with slots:

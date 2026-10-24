@@ -39,6 +39,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "fonttools" },
     { name = "openpyxl" },
     { name = "pdf2docx" },
     { name = "pillow" },
@@ -65,6 +66,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115,<1" },
+    { name = "fonttools", specifier = ">=4.61,<5" },
     { name = "openpyxl", specifier = ">=3.1.5,<4" },
     { name = "pdf2docx", specifier = ">=0.5.13,<0.6" },
     { name = "pillow", specifier = ">=12.2,<13" },

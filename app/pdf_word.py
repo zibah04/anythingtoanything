@@ -166,6 +166,11 @@ def convert(source: Path, target: Path, mode: str) -> None:
         if mode == "appearance":
             appearance_docx(document, target)
             return
+        if mode == "precise":
+            from app.pdf_precise import precise_docx
+
+            precise_docx(document, target)
+            return
     from pdf2docx import Converter
 
     converter = Converter(str(source))
@@ -187,7 +192,7 @@ def main() -> int:
     parser.add_argument("source", type=Path)
     parser.add_argument("target", type=Path)
     parser.add_argument("--status", type=Path, required=True)
-    parser.add_argument("--mode", choices=("editable", "appearance"), default="editable")
+    parser.add_argument("--mode", choices=("precise", "editable", "appearance"), default="precise")
     args = parser.parse_args()
     logging.getLogger().setLevel(logging.ERROR)
     try:

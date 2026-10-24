@@ -90,7 +90,7 @@ def test_all_advertised_conversion_routes(source, target, samples):
             image.load()
     elif target == "docx":
         document = Document(io.BytesIO(result))
-        assert "Hello conversion" in " ".join(paragraph.text for paragraph in document.paragraphs)
+        assert "Hello conversion" in "".join(document._element.xpath(".//w:t/text()"))
     elif target == "xlsx":
         workbook = load_workbook(io.BytesIO(result))
         assert "Hello conversion" in str(list(workbook.active.values))

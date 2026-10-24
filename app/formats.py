@@ -35,6 +35,11 @@ IMAGES = ("png", "jpg", "webp", "gif", "bmp", "tiff")
 SLIDES = ("pptx",)
 PDF_WORD_MODES = [
     {
+        "value": "precise",
+        "label": "Precise layout",
+        "note": "Preserves page positions with editable text boxes. Unsupported text, scans, and artwork stay as images. Best for forms and fixed layouts.",
+    },
+    {
         "value": "editable",
         "label": "Editable layout",
         "note": "Reconstructs editable text, tables, and images. Complex layouts and fonts can still shift.",

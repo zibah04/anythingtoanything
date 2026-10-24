@@ -160,7 +160,7 @@ function addFiles(files) {
       format,
       target: defaultTarget(format),
       status: "pending",
-      pdfMode: "editable",
+      pdfMode: "precise",
     });
     added++;
   }

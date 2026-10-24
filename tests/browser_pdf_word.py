@@ -42,8 +42,19 @@ def run():
             }
         )
         mode = page.get_by_label("Word conversion mode for layout.pdf")
-        expect(mode).to_have_value("editable")
+        expect(mode).to_have_value("precise")
         expect(page.locator(".file-note")).to_contain_text("editable text")
+        page.locator("#convert-button").click()
+        expect(page.locator(".download-button")).to_have_count(1, timeout=90000)
+        with page.expect_download() as info:
+            page.get_by_role("link", name="Download layout.docx", exact=True).click()
+        info.value.save_as(ARTIFACTS / "browser-precise.docx")
+        word = Document(ARTIFACTS / "browser-precise.docx")
+        assert "Keep this text editable." in "".join(word._element.xpath(".//w:t/text()"))
+        assert word._element.xpath(".//w:txbxContent")
+        mode.select_option("editable")
+        expect(page.locator(".download-button")).to_have_count(0)
+        expect(page.locator(".file-note")).to_contain_text("Reconstructs")
         page.locator("#convert-button").click()
         expect(page.locator(".download-button")).to_have_count(1, timeout=90000)
         with page.expect_download() as info:
@@ -72,7 +83,7 @@ def run():
         assert not errors, errors
         browser.close()
     print(
-        "PASS: editable/appearance Word modes, real DOCX downloads, result invalidation, accurate notices, and mobile controls."
+        "PASS: precise/editable/appearance Word modes, real DOCX downloads, result invalidation, accurate notices, and mobile controls."
     )
 
 

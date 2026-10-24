@@ -60,7 +60,7 @@ After deployment, verify the public page loads its CSS and scripts, `/api/health
 | Source | Compatible outputs | Where |
 | --- | --- | --- |
 | DOCX, ODT, RTF, EPUB, Markdown, HTML, TXT | PDF, DOCX, ODT, RTF, EPUB, Markdown, HTML, TXT (except the source format) | Server; TXT → HTML/MD and HTML → TXT run locally |
-| PDF | DOCX | Server, **editable layout reconstruction** or **page images for appearance** |
+| PDF | DOCX | Server, **positioned editable text**, **flowing layout reconstruction**, or **page images** |
 | PDF | ODT, RTF, EPUB, Markdown, HTML, TXT | Server, **text extraction** |
 | XLSX, ODS, CSV, TSV, JSON | XLSX, ODS, CSV, TSV, JSON, HTML, PDF (except the source format) | CSV/TSV/JSON interconversion runs locally; others use the server |
 | PPTX | PDF, DOCX, TXT, Markdown, HTML; ODP with LibreOffice | Server |
@@ -72,9 +72,10 @@ Aliases `.jpeg`, `.tif`, `.htm`, and `.markdown` are accepted.
 ### What to expect
 
 - **25 MB per file, 10 files per browser batch.** Up to two browser conversions run independently of the server queue. Server requests follow the advertised worker limit (two by default, one on the initial Render configuration), so a long server conversion does not hold up local conversions. Files download individually, and failures don't discard other results.
-- **PDF → Word defaults to Editable layout:** it reconstructs editable paragraphs, fonts, tables, images, columns, and page geometry. Reconstruction is best-effort; unusual layouts and unavailable fonts can still shift. Original line breaks are retained, and equivalent column sections are normalized to avoid extra pages in Word readers.
+- **PDF → Word defaults to Precise layout:** keeps the original page sizes and positions, with editable text in floating text boxes over page artwork. It embeds permitted TrueType font subsets and preserves character spacing, including justified text. This works well for printed web pages, forms, labels, and mixed columns. Editing is less flexible than a flowing document: text boxes do not reflow between pages, and table contents are positioned text rather than Word tables. Type 3 fonts, unsupported/restricted fonts, complex scripts, rotated text, and scanned pages remain images; this mode does not claim that every visible word is editable. Font subsets contain the original PDF's characters, so adding characters may require choosing another font in Word. Some viewers may handle floating boxes or embedded fonts differently.
+- Choose **Editable layout** for flowing editable paragraphs and native Word tables. It reconstructs fonts, images, columns, and page geometry. Reconstruction is best-effort; forms, unusual layouts, and unavailable fonts can shift. Original line breaks are retained, and equivalent column sections are normalized to avoid extra pages in Word readers.
 - Choose **Exact appearance** when matching the original pages matters more than editing text. It places a rendered image of each PDF page into a matching Word page. The text is not editable in this mode, including for scanned PDFs. Scanned text needs OCR to become editable; OCR is not implemented. Encrypted PDFs must be unlocked first.
-- PDF-to-Word runs in an isolated subprocess with a 90-second timeout and a 50-page limit. Appearance mode also limits rendered images to 48 MB and Word-compatible page sizes. Other PDF text exports retain their 300-page limit.
+- PDF-to-Word runs in an isolated subprocess with a 90-second timeout and a 50-page limit. Precise and appearance modes limit rendered images to 48 MB and Word-compatible page sizes. Precise mode also limits font data to 20 MB and editable text boxes to 20,000. Fonts are packaged inside the DOCX, never installed on the server. Embedding permissions are respected; fonts that prohibit editable subset embedding stay in the page artwork. Other PDF text exports retain their 300-page limit.
 - LibreOffice preserves office layout when exporting PDF; exact rendering still depends on installed fonts. Without it, PDF output is a readable text document. PPTX → text/document formats extracts slide text, without design or images.
 - Spreadsheet exports contain cell values, not formulas, charts, or formatting. XLSX ↔ ODS keeps worksheet names and values. CSV/TSV/JSON/HTML/PDF use the first worksheet. JSON input must be an array of objects or rows; object keys form the column union. JSON output requires unique, non-empty headers. Stored formula results may be empty if the source workbook has never been recalculated.
 - Text files must use UTF-8 or BOM-marked UTF-16. CSV/TSV exports prefix formula-like string cells with an apostrophe to avoid spreadsheet formula execution. Imported XLSX strings remain strings.
@@ -94,7 +95,7 @@ The API enforces upload sizes, validates document container signatures, caps arc
 
 - `GET /api/health` — liveness and version.
 - `GET /api/formats` — supported sources, compatible targets, browser/server routing, limitations, and limits.
-- `POST /api/convert` — multipart `file` and `target` (extension, such as `pdf`). PDF → DOCX also accepts `pdf_mode=editable` (default) or `pdf_mode=appearance`. Returns the converted file as an attachment. Every advertised browser conversion also works through this endpoint.
+- `POST /api/convert` — multipart `file` and `target` (extension, such as `pdf`). PDF → DOCX also accepts `pdf_mode=precise` (default), `pdf_mode=editable`, or `pdf_mode=appearance`. Returns the converted file as an attachment. Every advertised browser conversion also works through this endpoint.
 - `GET /openapi.json` — the full OpenAPI specification. No externally hosted documentation assets are needed.
 
 Example:
@@ -107,7 +108,7 @@ curl --fail-with-body -F file=@report.docx -F target=pdf \
 PDF-to-Word example:
 
 ```sh
-curl --fail-with-body -F file=@report.pdf -F target=docx -F pdf_mode=editable \
+curl --fail-with-body -F file=@report.pdf -F target=docx -F pdf_mode=precise \
   http://127.0.0.1:8000/api/convert --output report.docx
 ```
 
@@ -122,6 +123,8 @@ npm test
 The Python suite converts real sample files through every advertised source/target pair and opens the outputs with independent readers. It also tests the API, bad inputs, formula handling, limits, and cleanup. Legacy-format checks run when LibreOffice is available; fallback conversions are checked separately.
 
 `tests/test_pdf_word.py` checks editable tables, embedded images, heading styles, two-column reading order, and mixed portrait/landscape pages. It independently renders the resulting Word files with LibreOffice to check pagination and the visible content of appearance mode. It also covers scanned/encrypted PDFs, page limits, API mode selection, and cleanup.
+
+`tests/test_pdf_precise.py` adds generated, anonymous form regressions for embedded font subsets, font embedding permissions, fractional font sizes, character/word spacing, fixed field positions, page artwork, and mixed page sizes. It renders the DOCX independently with LibreOffice and checks text coordinates, page counts, and visible content. User-uploaded documents are not committed as fixtures.
 
 For real browser tests, start the server, then run:
 

@@ -16,6 +16,7 @@ dependencies = [
   "reportlab>=4.4,<5",
   "pdf2docx>=0.5.13,<0.6",
   "pymupdf>=1.26.7,<2",
+  "fonttools>=4.61,<5",
 ]
 
 [dependency-groups]

@@ -498,9 +498,9 @@ def image_convert(source: Path, target: Path, target_ext: str) -> None:
 
 
 def pdf_word_convert(source: Path, target: Path, mode: str) -> None:
-    if mode not in {"editable", "appearance"}:
+    if mode not in {"precise", "editable", "appearance"}:
         raise ConversionError(
-            "Choose Editable layout or Exact appearance for PDF-to-Word conversion."
+            "Choose Precise layout, Editable layout, or Exact appearance for PDF-to-Word conversion."
         )
     status = source.with_name("pdf-word-status.json")
     try:
@@ -539,7 +539,7 @@ def pdf_word_convert(source: Path, target: Path, mode: str) -> None:
 
 
 def convert_bytes(
-    data: bytes, source_ext: str, target_ext: str, pdf_mode: str = "editable"
+    data: bytes, source_ext: str, target_ext: str, pdf_mode: str = "precise"
 ) -> bytes:
     source_ext, target_ext = normalize(source_ext), normalize(target_ext)
     if target_ext not in target_map().get(source_ext, []):
