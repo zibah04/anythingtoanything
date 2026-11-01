@@ -23,7 +23,7 @@ Install LibreOffice Writer, Calc, and Impress for office PDF export and legacy f
 
 ```sh
 apt-get update
-apt-get install -y libreoffice-writer libreoffice-calc libreoffice-impress fonts-dejavu-core
+apt-get install -y libreoffice-writer libreoffice-calc libreoffice-impress fonts-dejavu-core tesseract-ocr tesseract-ocr-eng
 ```
 
 Without LibreOffice, modern formats still work. Document and presentation PDF export uses a **text-only** fallback; DOC, XLS, PPT, and ODP input and ODP output are not offered. The interface always uses the backend's actual capabilities.
@@ -61,10 +61,10 @@ After deployment, verify the public page loads its CSS and scripts, `/api/health
 | --- | --- | --- |
 | DOCX, ODT, RTF, EPUB, Markdown, HTML, TXT | PDF, DOCX, ODT, RTF, EPUB, Markdown, HTML, TXT (except the source format) | Server; TXT → HTML/MD and HTML → TXT run locally |
 | PDF | DOCX | Server, **positioned editable text**, **flowing layout reconstruction**, or **page images** |
-| PDF | ODT, RTF, EPUB, Markdown, HTML, TXT | Server, **text extraction** |
+| PDF | ODT, RTF, EPUB, Markdown, HTML, TXT | Server, **text extraction + optional offline English OCR** for scanned pages |
 | XLSX, ODS, CSV, TSV, JSON | XLSX, ODS, CSV, TSV, JSON, HTML, PDF (except the source format) | CSV/TSV/JSON interconversion runs locally; others use the server |
 | PPTX | PDF, DOCX, TXT, Markdown, HTML; ODP with LibreOffice | Server |
-| PNG, JPEG, WebP, GIF, BMP, TIFF | PNG, JPEG, WebP, GIF, BMP, TIFF, PDF (except the source format) | PNG/JPEG/WebP interconversion runs locally; others use the server |
+| PNG, JPEG, WebP, GIF, BMP, TIFF | PNG, JPEG, WebP, GIF, BMP, TIFF, PDF (except the source format); TXT when OCR is installed | PNG/JPEG/WebP interconversion runs locally; OCR runs server-side |
 | DOC, XLS, PPT, ODP | Outputs in the corresponding document, spreadsheet, or presentation family | Server, **requires LibreOffice** |
 
 Aliases `.jpeg`, `.tif`, `.htm`, and `.markdown` are accepted.
@@ -79,6 +79,8 @@ Aliases `.jpeg`, `.tif`, `.htm`, and `.markdown` are accepted.
 - LibreOffice preserves office layout when exporting PDF; exact rendering still depends on installed fonts. Without it, PDF output is a readable text document. PPTX → text/document formats extracts slide text, without design or images.
 - Spreadsheet exports contain cell values, not formulas, charts, or formatting. XLSX ↔ ODS keeps worksheet names and values. CSV/TSV/JSON/HTML/PDF use the first worksheet. JSON input must be an array of objects or rows; object keys form the column union. JSON output requires unique, non-empty headers. Stored formula results may be empty if the source workbook has never been recalculated.
 - Text files must use UTF-8 or BOM-marked UTF-16. CSV/TSV exports prefix formula-like string cells with an apostrophe to avoid spreadsheet formula execution. Imported XLSX strings remain strings.
+- Image → TXT and scanned PDF text extraction use **offline English Tesseract OCR**, if installed. OCR handles up to 8 image-only PDF pages per document, takes a maximum of 12 seconds per scanned page, and may miss handwriting, low-contrast, tiny or rotated text. An empty scan returns an actionable error rather than an empty output.
+- HTML → PDF produces a text-only PDF even when LibreOffice is installed; this deliberately avoids LibreOffice fetching remote HTML resources from untrusted uploads. HTML images, page styling, and layout are not retained in that route.
 - Image conversion uses the first frame, applies EXIF orientation, and replaces transparency with white for JPEG/PDF. Animated GIFs and multipage TIFFs are not preserved as animations or multipage documents.
 - Pandoc runs with its sandbox enabled. Remote images and linked files are not fetched. Some fonts, complex layouts, equations, or embedded media may not survive a format change.
 - Processing limits: 25-megapixel images, 50-page PDF-to-Word / 300-page PDF text extraction, 1 million text characters, 200,000 spreadsheet cells, 128 MB expanded archives, 64 MB output. PDF tables are limited to 2,000 rows and 15 columns. These limits fail with a visible error.

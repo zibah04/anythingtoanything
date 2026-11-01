@@ -19,7 +19,6 @@ import pypandoc
 from openpyxl import Workbook, load_workbook
 from PIL import Image, ImageOps, UnidentifiedImageError
 from pptx import Presentation
-from pypdf import PdfReader
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.pdfbase import pdfmetrics
@@ -27,6 +26,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app.formats import DOCUMENTS, IMAGES, TABLES, normalize, office_available, target_map
+from app.ocr import OCRError, image_to_text, pdf_to_text
 
 MAX_TEXT = 1_000_000
 MAX_CELLS = 200_000
@@ -167,24 +167,10 @@ def office_convert(source: Path, target: Path, target_ext: str) -> None:
 
 def extract_text(source: Path, extension: str) -> str:
     if extension == "pdf":
-        reader = PdfReader(source)
-        if reader.is_encrypted:
-            raise ConversionError("Unlock this PDF before converting it.")
-        if len(reader.pages) > 300:
-            raise ConversionError("PDF text extraction is limited to 300 pages.")
-        parts, size = [], 0
-        for page in reader.pages:
-            text = page.extract_text() or ""
-            size += len(text)
-            if size > MAX_TEXT:
-                raise ConversionError("Extracted text exceeds the processing limit.")
-            parts.append(text)
-        text = "\n\n".join(parts)
-        if not text.strip():
-            raise ConversionError(
-                "No selectable text was found. Scanned PDFs need OCR, which is not supported yet."
-            )
-        return text
+        try:
+            return pdf_to_text(source)
+        except OCRError as exc:
+            raise ConversionError(str(exc)) from exc
     if extension == "pptx":
         presentation = Presentation(source)
         parts = []
@@ -582,13 +568,19 @@ def convert_bytes(
                 if normalized == target_ext:
                     return source.read_bytes()
             if source_ext in IMAGES:
-                image_convert(source, target, target_ext)
+                if target_ext == "txt":
+                    try:
+                        target.write_text(image_to_text(source), encoding="utf-8")
+                    except OCRError as exc:
+                        raise ConversionError(str(exc)) from exc
+                else:
+                    image_convert(source, target, target_ext)
             elif source_ext in TABLES:
                 table_convert(source, source_ext, target, target_ext)
             elif source_ext == "pptx" and target_ext in {"pdf", "odp"} and office_available():
                 office_convert(source, target, target_ext)
             elif target_ext == "pdf":
-                if office_available() and source_ext in {"docx", "odt", "rtf", "html", "txt"}:
+                if office_available() and source_ext in {"docx", "odt", "rtf", "txt"}:
                     office_convert(source, target, "pdf")
                 else:
                     text_pdf(extract_text(source, source_ext), target)

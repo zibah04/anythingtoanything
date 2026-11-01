@@ -1,3 +1,5 @@
+from app.ocr import available as ocr_available
+
 """A single compatibility registry shared by the API and web interface."""
 
 import shutil
@@ -65,6 +67,9 @@ def target_map() -> dict[str, list[str]]:
     result = {ext: [x for x in DOCUMENTS if x != ext] for ext in DOCUMENTS}
     result.update({ext: [x for x in (*TABLES, "html", "pdf") if x != ext] for ext in TABLES})
     result.update({ext: [x for x in (*IMAGES, "pdf") if x != ext] for ext in IMAGES})
+    if ocr_available():
+        for ext in IMAGES:
+            result[ext].append("txt")
     result["pptx"] = ["pdf", "txt", "md", "html", "docx"]
     if office_available():
         result["doc"] = list(DOCUMENTS)
@@ -99,6 +104,8 @@ def conversion_note(source: str, target: str) -> str | None:
             return "Uses the first worksheet and stored cell values; formulas and styling are not preserved."
         return "Converts worksheet values. Formulas, charts, and styling are not preserved."
     if source in IMAGES:
+        if target == "txt":
+            return "Offline English OCR extracts visible text; handwriting and blurred scans may be inaccurate."
         return "Uses the first frame. JPEG replaces transparency with white."
     if target == "pdf" and not office_available():
         return "Creates a readable text PDF. Images and original page layout are not preserved."
@@ -142,5 +149,6 @@ def registry() -> dict:
         "max_file_size": 25 * 1024 * 1024,
         "max_batch_size": 10,
         "office_available": office_available(),
+        "ocr_available": ocr_available(),
         "pdf_word_modes": PDF_WORD_MODES,
     }
