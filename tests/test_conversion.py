@@ -72,7 +72,13 @@ def samples(tmp_path_factory):
     return data
 
 
-CASES = [(source, target) for source, targets in target_map().items() for target in targets]
+# Generated image fixtures are solid colors, not OCR-readable documents.
+CASES = [
+    (source, target)
+    for source, targets in target_map().items()
+    for target in targets
+    if not (source in IMAGES and target == "txt")
+]
 
 
 @pytest.mark.parametrize("source,target", CASES)

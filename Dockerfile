@@ -9,6 +9,7 @@ RUN --mount=type=secret,id=build_ca,mode=0444 \
     apt-get "$@" -o APT::Update::Error-Mode=any update; \
     apt-get "$@" install -y --no-install-recommends \
     libreoffice-writer libreoffice-calc libreoffice-impress fonts-dejavu-core fonts-liberation \
+    tesseract-ocr tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 10001 converter
 WORKDIR /app
