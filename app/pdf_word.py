@@ -5,6 +5,8 @@ import json
 import logging
 from pathlib import Path
 
+from app.pdf_errors import PDFWordError
+
 MAX_PAGES = 50
 MAX_TEXT = 1_000_000
 MAX_PAGE_PIXELS = 25_000_000
@@ -12,11 +14,7 @@ MAX_IMAGE_BYTES = 48 * 1024 * 1024
 logger = logging.getLogger(__name__)
 
 
-class PDFWordError(Exception):
-    """A message that is safe to show to the person converting a file."""
-
-
-def inspect_pdf(document, mode: str) -> None:
+def inspect_pdf(document, mode: str) -> bool:
     if document.needs_pass:
         raise PDFWordError("Unlock this PDF before converting it.")
     if not 0 < len(document) <= MAX_PAGES:
@@ -29,11 +27,7 @@ def inspect_pdf(document, mode: str) -> None:
         has_text = has_text or bool(text.strip())
         if characters > MAX_TEXT:
             raise PDFWordError("Extracted text exceeds the 1 million character processing limit.")
-    if mode == "editable" and not has_text:
-        raise PDFWordError(
-            "No selectable text was found. Choose Exact appearance to keep scanned pages as images; "
-            "editable scanned text needs OCR, which is not supported yet."
-        )
+    return has_text
 
 
 def place_page_image(paragraph, image: bytes, width: float, height: float) -> None:
@@ -162,9 +156,14 @@ def convert(source: Path, target: Path, mode: str) -> None:
     import pymupdf
 
     with pymupdf.open(source) as document:
-        inspect_pdf(document, mode)
+        has_text = inspect_pdf(document, mode)
         if mode == "appearance":
             appearance_docx(document, target)
+            return
+        if mode == "ocr" or mode == "editable" and not has_text:
+            from app.ocr import ocr_docx
+
+            ocr_docx(document, target)
             return
         if mode == "precise":
             from app.pdf_precise import precise_docx
@@ -192,7 +191,9 @@ def main() -> int:
     parser.add_argument("source", type=Path)
     parser.add_argument("target", type=Path)
     parser.add_argument("--status", type=Path, required=True)
-    parser.add_argument("--mode", choices=("precise", "editable", "appearance"), default="precise")
+    parser.add_argument(
+        "--mode", choices=("precise", "editable", "ocr", "appearance"), default="precise"
+    )
     args = parser.parse_args()
     logging.getLogger().setLevel(logging.ERROR)
     try:

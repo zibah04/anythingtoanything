@@ -2,6 +2,8 @@
 
 import shutil
 
+from app.ocr import ocr_available
+
 LABELS = {
     "pdf": "PDF",
     "docx": "Word",
@@ -37,12 +39,17 @@ PDF_WORD_MODES = [
     {
         "value": "precise",
         "label": "Precise layout",
-        "note": "Preserves page positions with editable text boxes. Unsupported text, scans, and artwork stay as images. Best for forms and fixed layouts.",
+        "note": "Preserves page positions with editable text boxes. Unsupported text, scans, and artwork stay as images. Choose Scanned text (OCR) for editable scans.",
     },
     {
         "value": "editable",
         "label": "Editable layout",
-        "note": "Reconstructs editable text, tables, and images. Complex layouts and fonts can still shift.",
+        "note": "Reconstructs editable text, tables, and images. PDFs without a text layer use English OCR with simpler formatting. Layouts and recognition can change.",
+    },
+    {
+        "value": "ocr",
+        "label": "Scanned text (OCR)",
+        "note": "Recognizes printed English in up to 10 scanned pages as editable text. Layout and images are not preserved. Yellow highlights mark uncertain words; proofread names and numbers.",
     },
     {
         "value": "appearance",
@@ -142,5 +149,8 @@ def registry() -> dict:
         "max_file_size": 25 * 1024 * 1024,
         "max_batch_size": 10,
         "office_available": office_available(),
-        "pdf_word_modes": PDF_WORD_MODES,
+        "pdf_word_modes": [
+            mode for mode in PDF_WORD_MODES if mode["value"] != "ocr" or ocr_available()
+        ],
+        "ocr_available": ocr_available(),
     }

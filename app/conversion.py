@@ -6,6 +6,7 @@ import io
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -29,6 +30,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 from app.formats import DOCUMENTS, IMAGES, TABLES, normalize, office_available, target_map
 
 MAX_TEXT = 1_000_000
+PDF_WORD_TIMEOUT = 90
 MAX_CELLS = 200_000
 MAX_OUTPUT = 64 * 1024 * 1024
 Image.MAX_IMAGE_PIXELS = 25_000_000
@@ -498,13 +500,13 @@ def image_convert(source: Path, target: Path, target_ext: str) -> None:
 
 
 def pdf_word_convert(source: Path, target: Path, mode: str) -> None:
-    if mode not in {"precise", "editable", "appearance"}:
+    if mode not in {"precise", "editable", "ocr", "appearance"}:
         raise ConversionError(
-            "Choose Precise layout, Editable layout, or Exact appearance for PDF-to-Word conversion."
+            "Choose Precise layout, Editable layout, Scanned text (OCR), or Exact appearance for PDF-to-Word conversion."
         )
     status = source.with_name("pdf-word-status.json")
     try:
-        result = subprocess.run(
+        with subprocess.Popen(
             [
                 sys.executable,
                 "-m",
@@ -516,9 +518,9 @@ def pdf_word_convert(source: Path, target: Path, mode: str) -> None:
                 "--status",
                 str(status),
             ],
-            check=False,
-            capture_output=True,
-            timeout=90,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            start_new_session=os.name == "posix",
             cwd=Path(__file__).resolve().parents[1],
             env={
                 **os.environ,
@@ -526,13 +528,27 @@ def pdf_word_convert(source: Path, target: Path, mode: str) -> None:
                 "OPENBLAS_NUM_THREADS": "1",
                 "MKL_NUM_THREADS": "1",
             },
-        )
+        ) as worker:
+            try:
+                worker.communicate(timeout=PDF_WORD_TIMEOUT)
+            except subprocess.TimeoutExpired:
+                # Stop the entire isolated group, including an active OCR child.
+                if os.name == "posix":
+                    try:
+                        os.killpg(worker.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                else:
+                    worker.kill()
+                worker.communicate()
+                raise
+            returncode = worker.returncode
     except subprocess.TimeoutExpired as error:
         raise ConversionError(
             "PDF-to-Word timed out. Split the PDF into fewer pages and try again."
         ) from error
     outcome = json.loads(status.read_text(encoding="utf-8")) if status.is_file() else {}
-    if result.returncode or not outcome.get("ok"):
+    if returncode or not outcome.get("ok"):
         raise ConversionError(
             outcome.get("message", "The PDF conversion could not finish. Try a smaller PDF.")
         )

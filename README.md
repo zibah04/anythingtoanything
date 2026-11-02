@@ -24,6 +24,8 @@ Install LibreOffice Writer, Calc, and Impress for office PDF export and legacy f
 ```sh
 apt-get update
 apt-get install -y libreoffice-writer libreoffice-calc libreoffice-impress fonts-dejavu-core
+# Optional for scanned PDF-to-Word OCR (included in the Docker image):
+apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-osd
 ```
 
 Without LibreOffice, modern formats still work. Document and presentation PDF export uses a **text-only** fallback; DOC, XLS, PPT, and ODP input and ODP output are not offered. The interface always uses the backend's actual capabilities.
@@ -34,7 +36,7 @@ Without LibreOffice, modern formats still work. Document and presentation PDF ex
 docker compose up --build
 ```
 
-The image includes LibreOffice and runs as a non-root user. Compose adds a read-only filesystem, a temporary workspace, and memory/CPU limits. Docker support is provided; build it on a machine with a Docker daemon.
+The image includes LibreOffice and Tesseract with English/orientation language data, and runs as a non-root user. Compose adds a read-only filesystem, a temporary workspace, and memory/CPU limits. Docker support is provided; build it on a machine with a Docker daemon.
 
 If your build network uses a TLS-inspecting proxy, supply your already-trusted public CA bundle through BuildKit rather than disabling certificate verification:
 
@@ -73,8 +75,9 @@ Aliases `.jpeg`, `.tif`, `.htm`, and `.markdown` are accepted.
 
 - **25 MB per file, 10 files per browser batch.** Up to two browser conversions run independently of the server queue. Server requests follow the advertised worker limit (two by default, one on the initial Render configuration), so a long server conversion does not hold up local conversions. Files download individually, and failures don't discard other results.
 - **PDF → Word defaults to Precise layout:** keeps the original page sizes and positions, with editable text in floating text boxes over page artwork. It embeds permitted TrueType font subsets and preserves character spacing, including justified text. This works well for printed web pages, forms, labels, and mixed columns. Editing is less flexible than a flowing document: text boxes do not reflow between pages, and table contents are positioned text rather than Word tables. Type 3 fonts, unsupported/restricted fonts, complex scripts, rotated text, and scanned pages remain images; this mode does not claim that every visible word is editable. Font subsets contain the original PDF's characters, so adding characters may require choosing another font in Word. Some viewers may handle floating boxes or embedded fonts differently.
-- Choose **Editable layout** for flowing editable paragraphs and native Word tables. It reconstructs fonts, images, columns, and page geometry. Reconstruction is best-effort; forms, unusual layouts, and unavailable fonts can shift. Original line breaks are retained, and equivalent column sections are normalized to avoid extra pages in Word readers.
-- Choose **Exact appearance** when matching the original pages matters more than editing text. It places a rendered image of each PDF page into a matching Word page. The text is not editable in this mode, including for scanned PDFs. Scanned text needs OCR to become editable; OCR is not implemented. Encrypted PDFs must be unlocked first.
+- Choose **Editable layout** for flowing editable paragraphs and native Word tables. It reconstructs fonts, images, columns, and page geometry. Reconstruction is best-effort; forms, unusual layouts, and unavailable fonts can shift. Original line breaks are retained, and equivalent column sections are normalized to avoid extra pages in Word readers. PDFs with no text layer automatically use the simpler OCR text output when OCR is available.
+- Choose **Scanned text (OCR)** for editable Word text from scanned PDFs. It recognizes printed English locally with Tesseract, reuses existing text on digital pages, and recognizes image pages even when they have a small digital header/footer. Up to 10 scanned pages are supported, with 200 DPI grayscale rendering capped at 8 megapixels per page and a 20-second timeout per page inside the existing 90-second worker limit. Orientation detection is enabled when the `osd` language data is present. OCR reconstructs text with line breaks; original images, tables, and layout are not preserved. Words with a recognition confidence score below 60 are highlighted yellow for review. OCR can misread handwriting, names, numbers, faint text, or complex layouts; proofreading is required. Other languages are not yet selectable. The option is advertised only when Tesseract and English language data are installed. `/api/formats` also reports `ocr_available`.
+- Choose **Exact appearance** when matching the original pages matters more than editing text. It places a rendered image of each PDF page into a matching Word page. The text is not editable in this mode, including for scanned PDFs. Encrypted PDFs must be unlocked first.
 - PDF-to-Word runs in an isolated subprocess with a 90-second timeout and a 50-page limit. Precise and appearance modes limit rendered images to 48 MB and Word-compatible page sizes. Precise mode also limits font data to 20 MB and editable text boxes to 20,000. Fonts are packaged inside the DOCX, never installed on the server. Embedding permissions are respected; fonts that prohibit editable subset embedding stay in the page artwork. Other PDF text exports retain their 300-page limit.
 - LibreOffice preserves office layout when exporting PDF; exact rendering still depends on installed fonts. Without it, PDF output is a readable text document. PPTX → text/document formats extracts slide text, without design or images.
 - Spreadsheet exports contain cell values, not formulas, charts, or formatting. XLSX ↔ ODS keeps worksheet names and values. CSV/TSV/JSON/HTML/PDF use the first worksheet. JSON input must be an array of objects or rows; object keys form the column union. JSON output requires unique, non-empty headers. Stored formula results may be empty if the source workbook has never been recalculated.
@@ -87,7 +90,7 @@ Aliases `.jpeg`, `.tif`, `.htm`, and `.markdown` are accepted.
 
 Local conversions do not upload their files. Server conversions use a unique temporary directory per operation and delete it on success or failure. Results are returned directly with `Cache-Control: no-store`; there are no retained files or public download URLs. The browser holds originals and results in memory until they are removed or the tab closes. No cookies or analytics are used. Browser downloads are saved only when requested.
 
-This is a working first version, designed to run locally or on a trusted server. For a public multi-user deployment, terminate HTTPS at a reverse proxy, enforce request-body/rate limits there, and isolate conversion workers from outbound networking and private infrastructure. The app has no authentication, durable job queue, OCR, or malware scanner. A process crash can leave OS temporary files until the container/host cleans them; Compose's temporary filesystem makes these ephemeral.
+This is a working first version, designed to run locally or on a trusted server. For a public multi-user deployment, terminate HTTPS at a reverse proxy, enforce request-body/rate limits there, and isolate conversion workers from outbound networking and private infrastructure. The app has no authentication, durable job queue, or malware scanner. OCR is local, with no external OCR API or key required. Temporary scan images and OCR data are deleted after processing, including failures; on POSIX hosts the worker timeout stops the whole process group, including an active Tesseract child. A process crash can leave OS temporary files until the container/host cleans them; Compose's temporary filesystem makes these ephemeral.
 
 The API enforces upload sizes, validates document container signatures, caps archive expansion, limits conversion concurrency, and times out Pandoc/LibreOffice subprocesses. Native parsers still process untrusted files, so deploy with the supplied process/container limits rather than exposing an unrestricted worker. Do not mount sensitive host directories into a public conversion container.
 
@@ -95,7 +98,7 @@ The API enforces upload sizes, validates document container signatures, caps arc
 
 - `GET /api/health` — liveness and version.
 - `GET /api/formats` — supported sources, compatible targets, browser/server routing, limitations, and limits.
-- `POST /api/convert` — multipart `file` and `target` (extension, such as `pdf`). PDF → DOCX also accepts `pdf_mode=precise` (default), `pdf_mode=editable`, or `pdf_mode=appearance`. Returns the converted file as an attachment. Every advertised browser conversion also works through this endpoint.
+- `POST /api/convert` — multipart `file` and `target` (extension, such as `pdf`). PDF → DOCX also accepts `pdf_mode=precise` (default), `pdf_mode=editable`, `pdf_mode=ocr`, or `pdf_mode=appearance`. OCR currently applies to Word output; other scanned PDF text exports still report that OCR is required. Returns the converted file as an attachment. Every advertised browser conversion also works through this endpoint.
 - `GET /openapi.json` — the full OpenAPI specification. No externally hosted documentation assets are needed.
 
 Example:
@@ -139,7 +142,7 @@ The browser suite verifies a mixed local/server batch, that local files aren't u
 
 `python tests/browser_asset_paths.py` checks stylesheet loading from the normal app, the `/static/` entry point, a directory preview, and a reverse proxy mounted under a URL prefix. It also checks that icons stay bounded if the stylesheet fails to load. Run it with the browser dependency group installed and the server running.
 
-`.venv/bin/python tests/browser_pdf_word.py` checks both PDF-to-Word modes in the real browser, verifies the downloaded DOCX contents, checks that changing modes invalidates an old result, and exercises the controls at 390px and 320px widths.
+`.venv/bin/python tests/browser_pdf_word.py` checks the precise, editable, and appearance modes in the real browser, verifies downloaded DOCX contents and result invalidation, and exercises controls at 390px and 320px widths. `.venv/bin/python tests/browser_ocr.py` adds real scan recognition, OCR downloads, automatic editable-mode fallback, and mobile controls. `tests/test_ocr.py` covers real recognition, mixed digital/scanned pages, editable Word round trips, confidence highlights, missing language data, bounds, temporary-file cleanup, and process-group termination on worker timeout. OCR checks require Tesseract with English data.
 
 ## Project structure
 
@@ -147,7 +150,8 @@ The browser suite verifies a mixed local/server batch, that local files aren't u
 app/main.py             HTTP API, guards, and static serving
 app/formats.py          Compatibility and processing-route registry
 app/conversion.py       Server conversion engines and limits
-app/pdf_word.py         Isolated PDF-to-Word layout and page-image worker
+app/pdf_word.py         Isolated PDF-to-Word layout, OCR, and page-image worker
+app/ocr.py              Bounded local Tesseract scan recognition
 app/static/             Responsive interface and local converters
 tests/                  Conversion matrix, API, JS, and browser checks
 scripts/                Repeatable setup and startup
